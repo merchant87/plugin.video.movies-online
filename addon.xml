@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="plugin.video.movies-online"
+       name="Movies Online"
+       version="0.1.1"
+       provider-name="Vip3r">
+  <requires>
+    <import addon="xbmc.python" version="2.1.0"/>
+    <import addon="script.module.pytz"/>
+  </requires>
+  <extension point="xbmc.python.pluginsource"
+             library="moviesOnline.py">
+    <provides>video</provides>
+  </extension>
+  <extension point="xbmc.addon.metadata">
+    <summary>
+      Watch movies online in Kodi
+    </summary>
+    <description>
+      Watch movies from different wsites. No adds, no internet browser needed.
+    </description>
+    <platform>all</platform>
+  </extension>
+</addon>

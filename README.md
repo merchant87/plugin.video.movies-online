@@ -1,2 +1,4 @@
-# plugin.video.movies-online
-Watch Online Movies in Kodi (XBMC)
+plugin.video.movies-online
+====================
+
+Watch movies online in Kodi
