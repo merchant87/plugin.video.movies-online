@@ -14,7 +14,6 @@ def parse_video_url(provider, searchString):
   if provider == constants.ID_990_RO:
     
     return getTitlesData990ro(searchString)
-    return getTitlesData990ro(searchString)
     
   #elif provider == constants.ID_FILMEONLINE2013_BIZ:
    # path = constants.URL_FILMEONLINE2013_BIZ
@@ -43,6 +42,8 @@ def getTitlesData990ro(searchString):
     response = urllib2.urlopen(request)
     
     movieList = []
+    titles = []
+    hrefs = [] 
     
     if response:
       html = response.read()
@@ -56,7 +57,7 @@ def getTitlesData990ro(searchString):
         
         #title = div.find(text=True)
         #addon_log(title)
-        movieList.append({
+        hrefs.append({
             #'title': "",#title,
             'href': href
         })
@@ -64,9 +65,12 @@ def getTitlesData990ro(searchString):
       for divTitle in tree.findAll('div', {'id': 'rest'}):
         title = divTitle.find(text=True)
         addon_log(title)
-        movieList.append({
+        titles.append({
             'title': title
         })
+      
+      movieList[0] = titles
+      movieList[1] = href
       
 
   except NameError, e:

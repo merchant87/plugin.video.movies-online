@@ -54,9 +54,9 @@ def search(provider):
       movieList = scraper.parse_video_url(provider, searchString)     
       
       if movieList:
-        #addon_log("YOU FOUND " + movieList[0].title)
-        addon_log("YOU FOUND " + movieList[0]['href'])
-      
+        #xbmcplugin.setContent(addon_handle, 'movies')
+        for title in movieList:
+          li = xbmcgui.ListItem(title, iconImage='DefaultVideo.png')
 
         #url = plugin2.url_for(
         #    'show_movie_titles',
