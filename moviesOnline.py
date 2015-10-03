@@ -2,10 +2,16 @@ import sys
 import xbmcgui
 import xbmcplugin
 
-import urllib, urllib2, re, xbmcplugin, xbmcgui
+import urllib, urllib2, re
 
 from glob import addon_log, addon, Downloader
-from dialog import inputDialog
+
+from xbmcswift2 import Plugin, xbmcgui
+
+from resources.lib import constants
+from resources.lib import scraper
+
+
 
 #   arguments:
 #0	The base URL of your add-on, e.g. 'plugin://plugin.video.myaddon/'
@@ -14,8 +20,7 @@ from dialog import inputDialog
 
 plugin=sys.argv[0]
 addon_handle = int(sys.argv[1])
-#paramstring = sys.argv[2]
-
+plugin2 = Plugin()
 
 def getParams():
   param=[]
@@ -40,6 +45,29 @@ def getParams():
 def grabFuStream(name, url):
   return None
 
+#mode can be one of the defined sites
+#@plugin.route('/search/')
+def search(provider):
+    searchString = plugin2.keyboard(heading=addon.getLocalizedString(30305))
+    
+    if searchString:
+      movieList = scraper.parse_video_url(provider, searchString)     
+      
+      if movieList:
+        #addon_log("YOU FOUND " + movieList[0].title)
+        addon_log("YOU FOUND " + movieList[0]['href'])
+      
+
+        #url = plugin2.url_for(
+        #    'show_movie_titles',
+            #path=scraper.get_search_path(search_string)
+        #    path=""
+        #)
+        #plugin2.redirect(url)
+        
+def show_movie_titles(path):
+  videos, next_link = scraper.get_video_titles(path)
+  
 
 
 
@@ -48,25 +76,25 @@ def grabFuStream(name, url):
 params = getParams()
 
 try:
-  mode=int(params["mode"])
+  mode = int(params["mode"])
 except:
-  mode=None
+  mode = None
   
-addon_log(mode)
+#addon_log(plugin)
+#addon_log(addon_handle)
+#addon_log(mode)
 
-#if(mode == None):
-  #xbmcplugin.setContent(addon_handle, 'movies')
+if(mode == None):
+  xbmcplugin.setContent(addon_handle, 'movies')
+  #url = 'd:\mondeo-carbuyer.mp4'
+  li = xbmcgui.ListItem(addon.getLocalizedString(30303), iconImage='DefaultVideo.png')
+  xbmcplugin.addDirectoryItem(handle=addon_handle, url=plugin + "?mode=" + str(constants.ID_990_RO), listitem=li)
   
-#  url = 'd:\mondeo-carbuyer.mp4'
-  #li = xbmcgui.ListItem(addon.getLocalizedString(30303), iconImage='DefaultVideo.png')
-  #xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+  li = xbmcgui.ListItem(addon.getLocalizedString(30304), iconImage='DefaultVideo.png')
+  xbmcplugin.addDirectoryItem(handle=addon_handle, url=plugin + "?mode=" + str(constants.ID_FILMEONLINE2013_BIZ), listitem=li)
   
-  #li = xbmcgui.ListItem(addon.getLocalizedString(30304), iconImage='DefaultVideo.png')
-  #xbmcplugin.addDirectoryItem(handle=addon_handle, url=url, listitem=li)
+  xbmcplugin.endOfDirectory(addon_handle)
   
-  #xbmcplugin.endOfDirectory(addon_handle)
-  
-#else:
-dialog = inputDialog()
-dialog.doModal()
-del dialog
+else:
+  provider = mode
+  search(provider)  
