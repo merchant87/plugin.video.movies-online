@@ -1,8 +1,8 @@
 import sys
-import xbmcgui
+import xbmc, xbmcgui
 import xbmcplugin
 
-import urllib, urllib2, re
+import urllib, urllib2, re, tempfile
 
 from glob import addon_log, addon, Downloader
 
@@ -11,90 +11,122 @@ from xbmcswift2 import Plugin, xbmcgui
 from resources.lib import constants
 from resources.lib import scraper
 
+plugin = Plugin()
 
 
-#   arguments:
-#0	The base URL of your add-on, e.g. 'plugin://plugin.video.myaddon/'
-#1	The process handle for this add-on, as a numeric string
-#2	The query string passed to your add-on, e.g. '?foo=bar&baz=quux'
 
-plugin=sys.argv[0]
-addon_handle = int(sys.argv[1])
-plugin2 = Plugin()
+@plugin.route('/')
+def show_categories():
+  
+  items = [{'label': addon.getLocalizedString(30303),
+            #'thumbnail': category['thumb'],
+            'path': plugin.url_for(
+                endpoint = 'search',
+                site = constants.ID_990_RO,
+            )
+           },
+           {'label': addon.getLocalizedString(30304),
+            'path': plugin.url_for(
+                endpoint = 'search',
+                site = constants.ID_FILMEONLINE2013_BIZ,
+            )
+           }]
 
-def getParams():
-  param=[]
-
-  paramstring=sys.argv[2]
-
-  if len(paramstring)>=2:
-    params=sys.argv[2]
-    cleanedparams=params.replace('?','')
-    if (params[len(params)-1]=='/'):
-      params=params[0:len(params)-2]
-    pairsofparams=cleanedparams.split('&')
-    param={}
-    for i in range(len(pairsofparams)):
-      splitparams={}
-      splitparams=pairsofparams[i].split('=')
-      if (len(splitparams))==2:
-        param[splitparams[0]]=splitparams[1]
-  return param
+  return plugin.finish(items)
 
 
-def grabFuStream(name, url):
-  return None
-
-#mode can be one of the defined sites
-#@plugin.route('/search/')
-def search(provider):
-    searchString = plugin2.keyboard(heading=addon.getLocalizedString(30305))
-    
-    if searchString:
-      movieList = scraper.parse_video_url(provider, searchString)     
-      
-      if movieList:
-        #xbmcplugin.setContent(addon_handle, 'movies')
-        for title in movieList:
-          li = xbmcgui.ListItem(title, iconImage='DefaultVideo.png')
-
-        #url = plugin2.url_for(
-        #    'show_movie_titles',
-            #path=scraper.get_search_path(search_string)
-        #    path=""
-        #)
-        #plugin2.redirect(url)
+@plugin.route('/search/<site>/')
+def search(site):
+  #addon_log(site)  
+  movieListData = scraper.parse_video_url(site)
+  if movieListData:
+    items = [{
+        'label': video[1],
+        #'thumbnail': video['thumb'],
+        #'is_playable': True,
+        'path': plugin.url_for(
+            endpoint='check_type',
+            path=video[0]
+        ),
+    } for video in movieListData]
+    return plugin.finish(items)
+  else:
+    # ERR movie not found
+    return 0
         
-def show_movie_titles(path):
-  videos, next_link = scraper.get_video_titles(path)
+@plugin.route('/videos/<path>/')
+def check_type(path):
+  videoType, episodes = scraper.checkVideoType(path)
+  #addon_log(videoType)
+  if videoType == 2:
+    #addon_log(episodes)
+    # seasonName, title, href
+    items = [{
+        'label': episode[0] + " - " + episode[1],
+        #'thumbnail': video['thumb'],
+        #'is_playable': True,
+        'path': plugin.url_for(
+            endpoint='play_video',
+            path=episode[2]
+        ),
+    } for episode in episodes]
+    return plugin.finish(items)
+  
+  elif videoType == 1:
+    #play video on fastupload
+    addon_log("play video")
+    play_video(path)
+  else:
+    addon_log("ERROR")
+  
+
+@plugin.route('/play_video/<path>/')
+def play_video(path):
+  #addon_log(path)
+  url, subtitle = scraper.grabFastUploadStream("http://www.990.ro/"+path)
+  if subtitle:
+    
+    __addondir__    = xbmc.translatePath(addon.getAddonInfo('profile') )
+    #__addondir__    = xbmc.translatePath(addon.getAddonInfo('path').decode('utf-8'))
+    #addon_log(__addondir__)
+    #subName = __addondir__  + "\\userData\\" + "subtitle.srt"
+    subName = __addondir__  + "subtitle.srt"
+    #addon_log(subName)
+    
+    #sub = urllib.URLopener()
+    #sub.retrieve(subtitle, subName)
+    
+    data = urllib2.urlopen(subtitle).read().decode("utf-8")
+    f = open(subName, 'wb')
+    f.write(data.encode('utf-8'))
+    f.close()
+
+    #xbmc.Player().setSubtitleStream(1)
+  
+  if xbmc.Player(xbmc.PLAYER_CORE_AUTO).isPlaying():
+    xbmc.Player(xbmc.PLAYER_CORE_AUTO).stop()
+    
+    try: xbmc.executebuiltin("Dialog.Close(all,true)")
+    except: pass
+    
+    xbmc.executebuiltin( "ActivateWindow(busydialog)" )
+    xbmc.sleep(800)
+  else:
+    xbmc.executebuiltin( "ActivateWindow(busydialog)" )
+    xbmc.Player(xbmc.PLAYER_CORE_AUTO).play(url)
+    if subtitle:
+      xbmc.Player().setSubtitles(subName)
+      xbmc.Player().showSubtitles(True)
   
 
 
-
-
-
-params = getParams()
-
-try:
-  mode = int(params["mode"])
-except:
-  mode = None
-  
-#addon_log(plugin)
-#addon_log(addon_handle)
-#addon_log(mode)
-
-if(mode == None):
-  xbmcplugin.setContent(addon_handle, 'movies')
-  #url = 'd:\mondeo-carbuyer.mp4'
-  li = xbmcgui.ListItem(addon.getLocalizedString(30303), iconImage='DefaultVideo.png')
-  xbmcplugin.addDirectoryItem(handle=addon_handle, url=plugin + "?mode=" + str(constants.ID_990_RO), listitem=li)
-  
-  li = xbmcgui.ListItem(addon.getLocalizedString(30304), iconImage='DefaultVideo.png')
-  xbmcplugin.addDirectoryItem(handle=addon_handle, url=plugin + "?mode=" + str(constants.ID_FILMEONLINE2013_BIZ), listitem=li)
-  
-  xbmcplugin.endOfDirectory(addon_handle)
-  
-else:
-  provider = mode
-  search(provider)  
+if __name__ == '__main__':
+    try:
+        plugin.run()
+    except scraper.NetworkError:
+        plugin.notify(msg=_('network_error'))#NOTE: declare function "_()"
+    except NotImplementedError, message:
+        plugin.notify(msg=_('not_implemented'))
+        log('NotImplementedError: %s' % message)
+    except scraper.TerritoryError:
+        plugin.notify(msg=_('not_available_in_your_country'))
